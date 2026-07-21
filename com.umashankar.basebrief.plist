@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.umashankar.basebrief</string>
+
+  <!-- run.sh resolves its own venv. No PATH is set here on purpose: inheriting
+       `python3` from the environment is what made the main pipeline behave
+       differently under launchd than in a shell. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/umashankar/market-brief-base/run.sh</string>
+    <string>--email</string>
+  </array>
+
+  <key>WorkingDirectory</key><string>/Users/umashankar/market-brief-base</string>
+
+  <!-- 06:35 IST on weekdays: after the US close, before the India open. This is
+       the LOCAL half of the pair; the GitHub Actions run at 01:00 UTC covers
+       the case where this Mac is asleep, which is why the 00:30 job in the main
+       pipeline never fired. Both firing means two briefs, which is the correct
+       trade for a base version whose job is to always arrive. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+  </array>
+
+  <key>StandardOutPath</key><string>/Users/umashankar/market-brief-base/run.log</string>
+  <key>StandardErrorPath</key><string>/Users/umashankar/market-brief-base/run.err</string>
+  <key>RunAtLoad</key><false/>
+</dict></plist>

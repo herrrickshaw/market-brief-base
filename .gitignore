@@ -1,0 +1,4 @@
+.venv/
+.env
+brief.html
+__pycache__/

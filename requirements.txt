@@ -1,0 +1,5 @@
+# Pinned on purpose. The main pipeline broke on 2026-07-21 because two
+# interpreters had different packages; a floating range reintroduces that
+# between the laptop and CI.
+yfinance==0.2.66
+pandas==2.3.3

@@ -1,0 +1,61 @@
+name: Daily Market Brief
+
+# Fires on GitHub's infrastructure, so it does not care whether the Mac is
+# awake. The main pipeline's launchd job was scheduled for 00:30 and the
+# machine was asleep, so it simply never ran — the failure mode this exists to
+# remove.
+on:
+  schedule:
+    # 01:00 UTC ~= 06:30 IST: after the US close, before the India open.
+    # GitHub cron is UTC-only and has no DST, so this drifts against IST by an
+    # hour twice a year. It also queues under load and can fire late by 10-20
+    # minutes; do not schedule anything that must be punctual.
+    - cron: "0 1 * * 1-5"
+  workflow_dispatch:        # manual "Run workflow" button, for testing
+
+concurrency:
+  # A late scheduled run plus a manual one would otherwise send two briefs.
+  group: daily-brief
+  cancel-in-progress: false
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15     # yfinance hanging must not burn Actions minutes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install pinned dependencies
+        run: pip install -r requirements.txt
+
+      - name: Self-test (offline)
+        # Runs BEFORE the network call. If the signal logic is broken there is
+        # no point fetching data, and a broken brief that still sends is worse
+        # than one that does not.
+        run: python brief.py --self-test
+
+      - name: Build and send
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_TO:   ${{ secrets.SMTP_TO }}
+        run: python brief.py --email
+
+      - name: Upload the brief
+        # Always: a degraded brief is the thing you most want to look at, and a
+        # failed send still leaves the HTML worth reading.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brief-${{ github.run_number }}
+          path: brief.html
+          retention-days: 14
+          if-no-files-found: warn
