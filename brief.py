@@ -247,15 +247,35 @@ def render(results, failures, generated):
 
 
 # ── email ─────────────────────────────────────────────────────────────────────
+def _env(key, default=None):
+    """Env var, treating EMPTY as absent.
+
+    GitHub Actions sets an env var for every `secrets.X` reference, so an
+    unconfigured secret arrives as "" rather than being unset. os.environ.get's
+    default only fires when the key is MISSING, so `int(os.environ.get(
+    "SMTP_PORT", "587"))` became int("") and raised — the 2026-07-21 test run
+    fetched all 30 prices, wrote the brief, then exited 2 on a config read.
+    "Absent" and "empty" are different states and only one of them takes a
+    default.
+    """
+    v = os.environ.get(key)
+    return v.strip() if v and v.strip() else default
+
+
 def send(html, subject):
     """SMTP from env only. Missing config is a clear skip, never a crash."""
-    host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    port = int(os.environ.get("SMTP_PORT", "587"))
-    user = os.environ.get("SMTP_USER")
-    pw = os.environ.get("SMTP_PASS")
-    to = os.environ.get("SMTP_TO") or user
+    host = _env("SMTP_HOST", "smtp.gmail.com")
+    try:
+        port = int(_env("SMTP_PORT", "587"))
+    except ValueError:
+        print(f"  email: SMTP_PORT={os.environ.get('SMTP_PORT')!r} is not a number "
+              "— skipping send")
+        return False
+    user, pw = _env("SMTP_USER"), _env("SMTP_PASS")
+    to = _env("SMTP_TO") or user
     if not (user and pw and to):
-        print("  email: SMTP_USER / SMTP_PASS / SMTP_TO not set — skipping send")
+        missing = [k for k in ("SMTP_USER", "SMTP_PASS", "SMTP_TO") if not _env(k)]
+        print(f"  email: not configured ({', '.join(missing)}) — skipping send")
         return False
     m = MIMEMultipart("alternative")
     m["Subject"], m["From"], m["To"] = subject, user, to
@@ -297,6 +317,34 @@ def self_test() -> int:
           sma([1.0, 2.0, 3.0], 50) is None)
     check("sma ignores NaN instead of treating it as zero",
           abs(sma([2.0, nan, 4.0], 2) - 3.0) < 1e-9)
+
+    # GitHub sets an env var for every referenced secret, so an unconfigured one
+    # arrives as "" rather than unset. This is asserted, not remembered.
+    os.environ["_T_EMPTY"] = ""
+    os.environ["_T_SPACES"] = "   "
+    os.environ["_T_SET"] = "587"
+    check("empty env var falls back to the default", _env("_T_EMPTY", "587") == "587")
+    check("whitespace-only env var falls back too", _env("_T_SPACES", "587") == "587")
+    check("a real value is returned", _env("_T_SET", "1") == "587")
+    check("absent env var falls back", _env("_T_MISSING", "587") == "587")
+    for k in ("_T_EMPTY", "_T_SPACES", "_T_SET"):
+        os.environ.pop(k, None)
+
+    # An unconfigured send is a SKIP, not a failure — otherwise a CI run with no
+    # secrets reports broken when it worked.
+    saved = {k: os.environ.pop(k, None) for k in
+             ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_TO")}
+    os.environ["SMTP_PORT"] = ""          # reproduce the exact CI condition
+    try:
+        check("unconfigured send skips cleanly instead of raising",
+              send("<p>x</p>", "test") is False)
+    except Exception as e:
+        check(f"unconfigured send raised {type(e).__name__}", False)
+    finally:
+        os.environ.pop("SMTP_PORT", None)
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
     print("\n  self-test:", "OK" if ok else "FAILED")
     return 0 if ok else 1
 
@@ -340,6 +388,9 @@ def main() -> int:
         if failures:
             subject += f" ({len(failures)} degraded)"
         try:
+            # send() returns False for "not configured" — a legitimate state, not
+            # a failure. Only a genuine delivery error is worth a non-zero exit;
+            # conflating the two made an unconfigured CI run look broken.
             send(html, subject)
         except Exception as e:
             print(f"  email FAILED: {type(e).__name__}: {str(e)[:90]}")
