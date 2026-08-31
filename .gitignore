@@ -2,3 +2,5 @@
 .env
 brief.html
 __pycache__/
+run.err
+run.log
