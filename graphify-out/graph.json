@@ -1,0 +1,815 @@
+{
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "nodes": [
+    {
+      "id": "brief",
+      "label": "brief.py",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_sma",
+      "label": "sma()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L85",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_darvas",
+      "label": "darvas()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L91",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_fetch",
+      "label": "fetch()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L131",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_trend",
+      "label": "trend()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L164",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_render",
+      "label": "render()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L173",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_env",
+      "label": "_env()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L250",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_send",
+      "label": "send()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L265",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_self_test",
+      "label": "self_test()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L293",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_self_test_check",
+      "label": "check()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L297",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_main",
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "brief.py",
+      "source_location": "L352",
+      "_callable": true,
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_2",
+      "label": "brief.py — the BASE daily market brief. One file, no local state, always fires.…",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L2",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_86",
+      "label": "Simple moving average of the last n values, or None if there aren't n.",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L86",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_92",
+      "label": "Darvas box on SETTLED bars, with the current bar excluded from formation.…",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L92",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_132",
+      "label": "{ticker: {close, date, sma50, sma200, darvas}} — or {} if yfinance fails.…",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L132",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_165",
+      "label": "Golden/death cross and position vs the 200-day.",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L165",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_174",
+      "label": "Self-contained HTML that survives a dark-mode client. The main pipeline's brief…",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L174",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_251",
+      "label": "Env var, treating EMPTY as absent. GitHub Actions sets an env var for every…",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L251",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_266",
+      "label": "SMTP from env only. Missing config is a clear skip, never a crash.",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L266",
+      "_origin": "ast"
+    },
+    {
+      "id": "brief_rationale_294",
+      "label": "Verify the logic offline. Runs in CI before any network call.",
+      "file_type": "rationale",
+      "source_file": "brief.py",
+      "source_location": "L294",
+      "_origin": "ast"
+    },
+    {
+      "id": "run",
+      "label": "run.sh",
+      "file_type": "code",
+      "source_file": "run.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "file"
+      },
+      "_origin": "ast"
+    },
+    {
+      "id": "run_sh__entry",
+      "label": "run.sh script",
+      "file_type": "code",
+      "source_file": "run.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_entrypoint"
+      },
+      "_origin": "ast"
+    },
+    {
+      "id": "readme",
+      "label": "README.md",
+      "file_type": "document",
+      "node_kind": "page",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_market_brief_base",
+      "label": "market-brief-base",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_what_it_does",
+      "label": "What it does",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L11",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_why_it_exists",
+      "label": "Why it exists",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L17",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_run_it",
+      "label": "Run it",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L31",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_email",
+      "label": "Email",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L41",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_github_actions",
+      "label": "GitHub Actions",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L50",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_local_schedule",
+      "label": "Local schedule",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L66",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_design_rules",
+      "label": "Design rules",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L82",
+      "_origin": "ast"
+    },
+    {
+      "id": "readme_what_it_deliberately_does_not_do",
+      "label": "What it deliberately does not do",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "README.md",
+      "source_location": "L93",
+      "_origin": "ast"
+    }
+  ],
+  "links": [
+    {
+      "source": "brief",
+      "target": "argparse",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L52",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "os",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L53",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "smtplib",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L54",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "sys",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "datetime",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L56",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "email_mime_multipart",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "email_mime_text",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L58",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "pathlib",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L59",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_sma",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L85",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_darvas",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L91",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_fetch",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L131",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_trend",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L164",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_render",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L173",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_env",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L250",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_send",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L265",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_self_test",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L293",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_self_test",
+      "target": "brief_self_test_check",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L297",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief",
+      "target": "brief_main",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L352",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_fetch",
+      "target": "brief_sma",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L154",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_fetch",
+      "target": "brief_darvas",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L157",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_render",
+      "target": "brief_trend",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L235",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_send",
+      "target": "brief_env",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L267",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_self_test",
+      "target": "brief_self_test_check",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L304",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_self_test",
+      "target": "brief_darvas",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L305",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_self_test",
+      "target": "brief_sma",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L317",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_self_test",
+      "target": "brief_env",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L326",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_self_test",
+      "target": "brief_send",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L340",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_main",
+      "target": "brief_self_test",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L360",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_main",
+      "target": "brief_fetch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L366",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_main",
+      "target": "brief_render",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L382",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_main",
+      "target": "brief_send",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L394",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_2",
+      "target": "brief",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_86",
+      "target": "brief_sma",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L86",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_92",
+      "target": "brief_darvas",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L92",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_132",
+      "target": "brief_fetch",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L132",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_165",
+      "target": "brief_trend",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L165",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_174",
+      "target": "brief_render",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L174",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_251",
+      "target": "brief_env",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L251",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_266",
+      "target": "brief_send",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L266",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "brief_rationale_294",
+      "target": "brief_self_test",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "brief.py",
+      "source_location": "L294",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "run",
+      "target": "run_sh__entry",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "run.sh",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme",
+      "target": "readme_market_brief_base",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_what_it_does",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_why_it_exists",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L17",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_run_it",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L31",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_email",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L41",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_github_actions",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L50",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_local_schedule",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L66",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_design_rules",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L82",
+      "weight": 1.0,
+      "_origin": "ast"
+    },
+    {
+      "source": "readme_market_brief_base",
+      "target": "readme_what_it_deliberately_does_not_do",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L93",
+      "weight": 1.0,
+      "_origin": "ast"
+    }
+  ],
+  "directed": false
+}

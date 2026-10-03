@@ -1,0 +1,32 @@
+{
+  "brief.py": {
+    "mtime": 1784650527.2540424,
+    "seen": 1789193310.908831,
+    "ast_hash": "0645089cfe147c5ea62de63b4f8401cd",
+    "semantic_hash": ""
+  },
+  "run.sh": {
+    "mtime": 1786353564.1038344,
+    "seen": 1789193310.908834,
+    "ast_hash": "3fb3bdfaf4722731b9b298443b9b6c75",
+    "semantic_hash": ""
+  },
+  ".github/workflows/daily-brief.yml": {
+    "mtime": 1784649296.9286842,
+    "seen": 1789193310.9088352,
+    "ast_hash": "2fdd8f1c51310e6039e82d43ad15883c",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1789399864.10635,
+    "seen": 1789968763.078942,
+    "ast_hash": "c590ecfb95b190aefe742a9fefda1774",
+    "semantic_hash": ""
+  },
+  "requirements.txt": {
+    "mtime": 1784649280.478595,
+    "seen": 1789193310.908837,
+    "ast_hash": "c86bd2db3b34da22079137cb35d17aa0",
+    "semantic_hash": ""
+  }
+}
