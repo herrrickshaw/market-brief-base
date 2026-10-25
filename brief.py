@@ -141,7 +141,8 @@ def fetch(tickers):
     for t in tickers:
         try:
             d = data[t] if len(tickers) > 1 else data
-            c = d["Close"].dropna()
+            c = d["Close"]
+            c = c[c > 0]          # NaN and 0.0 are both "no price" (rule 5)
             if c.empty:
                 out[t] = {"error": "no settled bars"}
                 continue
