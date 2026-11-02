@@ -4,3 +4,5 @@ brief.html
 __pycache__/
 run.err
 run.log
+.pytest_cache/
+.ruff_cache/
