@@ -2,6 +2,14 @@
 
 Guidance for Claude Code sessions working in this repository.
 
+## Repo guide
+
+- One Python module, `brief.py` (constants → indicators → fetch → render → email → self-test → CLI), and one shell entry point, `run.sh`. The README's "How it works" table names the function per stage.
+- Entry points are load-bearing: `run.sh`, `brief.py --email | --out | --self-test`, the `SMTP_*` env names and `brief.html` are invoked by `com.umashankar.basebrief.plist` and `.github/workflows/daily-brief.yml` by exact name. Do not rename them.
+- `--email` has no already-sent guard (two schedulers → two briefs, by design). Never run it while testing; never commit `.env`.
+- Verify with `ruff check .`, `bash tests/smoke.sh`, `pytest -q` (43 tests, offline). `pytest` needs `pip install -r requirements-dev.txt`.
+- `graphify-out/` is generated output; `requirements.txt` pins are shared with CI and must stay pinned.
+
 <!-- source-fetch-toolkit:v1 (managed by ~/bin/add_source_fetch_section.py — edit there, not here) -->
 ## Source fetching for data collection & literature surveys
 

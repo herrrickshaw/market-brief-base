@@ -1,0 +1,17 @@
+# Tooling config only. Runtime deps stay pinned in requirements.txt because
+# run.sh and the daily-brief workflow install from that file by name.
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "UP017",  # datetime.timezone.utc is kept for readability
+    "E741",   # `l` for lows mirrors `h` for highs in darvas()
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

@@ -45,6 +45,11 @@ DESIGN RULES, each one earned
     python brief.py                 # print to stdout, write brief.html
     python brief.py --email         # also send (needs SMTP_* env)
     python brief.py --self-test     # no network; verify the logic
+
+LAYOUT (top to bottom): constants → indicators (pure) → data (fetch + parse)
+→ render (pure) → email (config + delivery) → self-test → CLI. Pure functions
+take data in and return data out; the network and SMTP sit behind injectable
+callables so every stage is testable without either.
 """
 
 from __future__ import annotations
@@ -53,18 +58,22 @@ import argparse
 import os
 import smtplib
 import sys
-from datetime import date, datetime, timezone
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
+OUT_FILE = HERE / "brief.html"
 
 # Universe is HARDCODED on purpose. Every "fetch the constituent list first"
 # design adds a source that can be down at 00:30, and a base version that cannot
 # run without a working index-scraper is not a base version. Small, liquid,
 # recognisable — enough to answer "did anything happen".
-UNIVERSE = {
+UNIVERSE: dict[str, list[str]] = {
     "India": [
         "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS",
         "BHARTIARTL.NS", "SBIN.NS", "LT.NS", "ITC.NS", "AXISBANK.NS",
@@ -79,16 +88,30 @@ BENCH = {"India": "^NSEI", "US": "^GSPC"}
 
 LOOKBACK = "1y"          # enough for a 200-day average
 DARVAS_CONFIRM = 3       # bars a high must survive to define a box top
+MIN_BARS_FOR_BOX = 20    # fewer settled bars than this → INSUFFICIENT_DATA
+SMA_FAST = 50            # golden/death cross: fast leg
+SMA_SLOW = 200           # golden/death cross: slow leg
+ERROR_TEXT_LEN = 60      # per-ticker error messages are truncated to this
+
+SMTP_KEYS = ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_TO")
+DEFAULT_SMTP_HOST = "smtp.gmail.com"
+DEFAULT_SMTP_PORT = "587"
+SMTP_TIMEOUT_S = 45
+
+Row = dict[str, Any]                      # one ticker's summary (or {"error": …})
+MarketResults = dict[str, dict[str, Row]]  # market → ticker → Row
+Downloader = Callable[[Sequence[str]], Any]
 
 
 # ── indicators ────────────────────────────────────────────────────────────────
-def sma(vals, n):
+def sma(vals: Sequence[float], n: int) -> float | None:
     """Simple moving average of the last n values, or None if there aren't n."""
     v = [x for x in vals if x == x]          # drop NaN; never substitute zero
     return sum(v[-n:]) / n if len(v) >= n else None
 
 
-def darvas(highs, lows, closes):
+def darvas(highs: Sequence[float], lows: Sequence[float],
+           closes: Sequence[float]) -> dict[str, Any]:
     """Darvas box on SETTLED bars, with the current bar excluded from formation.
 
     Including the current bar makes a breakdown impossible to detect — the box
@@ -96,8 +119,11 @@ def darvas(highs, lows, closes):
     Trailing NaNs are dropped, never zero-filled: zero sits below every box
     bottom, so a zero-filled close reports BREAKDOWN_SELL for the entire
     universe while the LTP column still shows a real price beside it.
+
+    Returns {"signal", "top", "bottom"}; signal is one of INSUFFICIENT_DATA,
+    NO_DATA, NO_BOX, BREAKOUT_BUY, BREAKDOWN_SELL, IN_BOX.
     """
-    if len(closes) < 20:
+    if len(closes) < MIN_BARS_FOR_BOX:
         return {"signal": "INSUFFICIENT_DATA", "top": None, "bottom": None}
     cur = closes[-1]
     if cur is None or cur != cur or cur <= 0:
@@ -127,59 +153,97 @@ def darvas(highs, lows, closes):
     return {"signal": sig, "top": top, "bottom": bottom}
 
 
-# ── data ──────────────────────────────────────────────────────────────────────
-def fetch(tickers):
-    """{ticker: {close, date, sma50, sma200, darvas}} — or {} if yfinance fails.
-
-    Returns the BAR DATE with every price. A price without its date is how a
-    stale close gets presented as today's.
-    """
-    import yfinance as yf
-    out = {}
-    data = yf.download(tickers, period=LOOKBACK, auto_adjust=False,
-                       progress=False, group_by="ticker", threads=True)
-    for t in tickers:
-        try:
-            d = data[t] if len(tickers) > 1 else data
-            c = d["Close"].dropna()
-            if c.empty:
-                out[t] = {"error": "no settled bars"}
-                continue
-            closes = [float(x) for x in c.tolist()]
-            hi = [float(x) for x in d["High"].reindex(c.index).tolist()]
-            lo = [float(x) for x in d["Low"].reindex(c.index).tolist()]
-            out[t] = {
-                "close": closes[-1],
-                "date": c.index[-1].date().isoformat(),
-                "sma50": sma(closes, 50),
-                "sma200": sma(closes, 200),
-                "prev": closes[-2] if len(closes) > 1 else None,
-                "darvas": darvas(hi, lo, closes),
-            }
-        except Exception as e:
-            out[t] = {"error": f"{type(e).__name__}: {str(e)[:60]}"}
-    return out
-
-
-def trend(r):
-    """Golden/death cross and position vs the 200-day."""
+def trend(r: Mapping[str, Any]) -> str:
+    """Golden/death cross from a row's sma50/sma200, or "—" if either is missing."""
     s50, s200 = r.get("sma50"), r.get("sma200")
     if not s50 or not s200:
         return "—"
     return "Golden Cross" if s50 > s200 else "Death Cross"
 
 
-# ── render ────────────────────────────────────────────────────────────────────
-def render(results, failures, generated):
-    """Self-contained HTML that survives a dark-mode client.
+def day_change_pct(close: float, prev: float | None) -> float | None:
+    """Percent change from the previous settled close, or None without one."""
+    return (close / prev - 1) * 100 if prev else None
 
-    The main pipeline's brief set every heading to #333 on an implicit white
-    page. A dark-theme client darkens the background and keeps the grey, so the
-    title and every section heading rendered invisible with no error. Colours
-    here are declared for BOTH schemes, and the semantic green/red is left
-    intact — the point of the colour is the signal.
+
+# ── data ──────────────────────────────────────────────────────────────────────
+def _yf_download(tickers: Sequence[str]) -> Any:
+    """The one network call: a yfinance frame for `tickers` over LOOKBACK."""
+    import yfinance as yf
+    return yf.download(list(tickers), period=LOOKBACK, auto_adjust=False,
+                       progress=False, group_by="ticker", threads=True)
+
+
+def summarise(closes: Sequence[float], highs: Sequence[float],
+              lows: Sequence[float], bar_date: str) -> Row:
+    """One ticker's row from aligned settled bars; `bar_date` is the last close's date."""
+    return {
+        "close": closes[-1],
+        "date": bar_date,
+        "sma50": sma(closes, SMA_FAST),
+        "sma200": sma(closes, SMA_SLOW),
+        "prev": closes[-2] if len(closes) > 1 else None,
+        "darvas": darvas(highs, lows, closes),
+    }
+
+
+def _row_from_frame(frame: Any) -> Row:
+    """Row for a single-ticker OHLC frame; {"error"} if it has no settled close."""
+    c = frame["Close"].dropna()
+    if c.empty:
+        return {"error": "no settled bars"}
+    closes = [float(x) for x in c.tolist()]
+    hi = [float(x) for x in frame["High"].reindex(c.index).tolist()]
+    lo = [float(x) for x in frame["Low"].reindex(c.index).tolist()]
+    return summarise(closes, hi, lo, c.index[-1].date().isoformat())
+
+
+def fetch(tickers: Sequence[str], downloader: Downloader | None = None) -> dict[str, Row]:
+    """{ticker: {close, date, sma50, sma200, prev, darvas}} — or {} if yfinance fails.
+
+    Returns the BAR DATE with every price. A price without its date is how a
+    stale close gets presented as today's. A ticker that cannot be parsed gets
+    {"error": "<ExcType>: <message>"} instead of being dropped.
     """
-    css = """
+    out: dict[str, Row] = {}
+    data = (downloader or _yf_download)(tickers)
+    for t in tickers:
+        try:
+            d = data[t] if len(tickers) > 1 else data
+            out[t] = _row_from_frame(d)
+        except Exception as e:
+            out[t] = {"error": f"{type(e).__name__}: {str(e)[:ERROR_TEXT_LEN]}"}
+    return out
+
+
+def collect(universe: Mapping[str, Sequence[str]],
+            fetcher: Callable[[Sequence[str]], dict[str, Row]] | None = None,
+            ) -> tuple[MarketResults, dict[str, str]]:
+    """Fetch every market; a market that raises is named in `failures`, not dropped."""
+    fetcher = fetcher or fetch
+    results: MarketResults = {}
+    failures: dict[str, str] = {}
+    for market, tickers in universe.items():
+        try:
+            r = fetcher(tickers)
+            good = {k: v for k, v in r.items() if "error" not in v}
+            if not good:
+                failures[market] = "no usable data"
+            results[market] = r
+            print(f"  {market}: {len(good)}/{len(tickers)} priced")
+        except Exception as e:
+            failures[market] = f"{type(e).__name__}"
+            print(f"  {market}: FAILED {type(e).__name__}: {str(e)[:70]}")
+    return results, failures
+
+
+# ── render ────────────────────────────────────────────────────────────────────
+# Colours are declared for BOTH schemes. The main pipeline's brief set every
+# heading to #333 on an implicit white page; a dark-theme client darkens the
+# background and keeps the grey, so the title and every section heading
+# rendered invisible with no error. The semantic green/red is left intact —
+# the point of the colour is the signal.
+CSS = """
     body{margin:0;padding:16px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
          background:#fff;color:#1a1a1a}
     h1{font-size:20px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;
@@ -200,10 +264,45 @@ def render(results, failures, generated):
       .warn{background:#221f14;color:#e0dcc8;border-color:#5a4b1e}
     }
     """
-    p = [f"<!doctype html><html><head><meta charset='utf-8'>",
+
+DISCLAIMER = ("Educational / research only — NOT investment advice. Mechanical "
+              "signals on a fixed 30-name universe; they do not account for your "
+              "objectives or risk. Consult a SEBI-registered adviser before acting.")
+
+
+def _row_html(ticker: str, r: Row) -> str:
+    """One <tr> for a ticker: an error row spans the table, a priced row has six cells."""
+    if "error" in r:
+        return (f"<tr><td><b>{ticker}</b></td><td colspan='5' class='mut'>"
+                f"{r['error']}</td></tr>")
+    chg = day_change_pct(r["close"], r.get("prev"))
+    cls = "up" if (chg or 0) > 0 else "dn"
+    sig = r["darvas"]["signal"]
+    sc = "up" if sig == "BREAKOUT_BUY" else "dn" if sig == "BREAKDOWN_SELL" else "mut"
+    return (f"<tr><td><b>{ticker}</b></td><td>{r['close']:,.2f}</td>"
+            f"<td class='mut'>{r['date']}</td>"
+            f"<td class='{cls}'>{f'{chg:+.2f}%' if chg is not None else '—'}</td>"
+            f"<td class='mut'>{trend(r)}</td>"
+            f"<td class='{sc}'>{sig}</td></tr>")
+
+
+def _market_html(market: str, rows: Mapping[str, Row]) -> list[str]:
+    """Heading plus one table for a market, tickers in sorted order."""
+    p = [f"<h2>{market}</h2><div class='wrap'><table>"
+         "<tr><th>Symbol</th><th>Close</th><th>As of</th><th>Day</th>"
+         "<th>Trend</th><th>Darvas</th></tr>"]
+    p.extend(_row_html(t, r) for t, r in sorted(rows.items()))
+    p.append("</table></div>")
+    return p
+
+
+def render(results: MarketResults, failures: Mapping[str, str],
+           generated: datetime) -> str:
+    """Self-contained HTML that survives a dark-mode client (see CSS)."""
+    p = ["<!doctype html><html><head><meta charset='utf-8'>",
          "<meta name='viewport' content='width=device-width,initial-scale=1'>",
          "<meta name='color-scheme' content='light dark'>",
-         f"<style>{css}</style></head><body>",
+         f"<style>{CSS}</style></head><body>",
          f"<h1>Daily Market Brief — {generated:%d %b %Y}</h1>",
          "<p class='sub'>Base version · yfinance only · prices are the last "
          "SETTLED close, never live</p>"]
@@ -215,39 +314,26 @@ def render(results, failures, generated):
                  "</div>")
 
     for market, rows in results.items():
-        p.append(f"<h2>{market}</h2><div class='wrap'><table>"
-                 "<tr><th>Symbol</th><th>Close</th><th>As of</th><th>Day</th>"
-                 "<th>Trend</th><th>Darvas</th></tr>")
-        for t, r in sorted(rows.items()):
-            if "error" in r:
-                p.append(f"<tr><td><b>{t}</b></td><td colspan='5' class='mut'>"
-                         f"{r['error']}</td></tr>")
-                continue
-            chg = ((r["close"] / r["prev"] - 1) * 100
-                   if r.get("prev") else None)
-            cls = "up" if (chg or 0) > 0 else "dn"
-            sig = r["darvas"]["signal"]
-            sc = "up" if sig == "BREAKOUT_BUY" else "dn" if sig == "BREAKDOWN_SELL" else "mut"
-            p.append(
-                f"<tr><td><b>{t}</b></td><td>{r['close']:,.2f}</td>"
-                f"<td class='mut'>{r['date']}</td>"
-                f"<td class='{cls}'>{f'{chg:+.2f}%' if chg is not None else '—'}</td>"
-                f"<td class='mut'>{trend(r)}</td>"
-                f"<td class='{sc}'>{sig}</td></tr>")
-        p.append("</table></div>")
+        p.extend(_market_html(market, rows))
 
-    p.append("<p class='mut' style='margin-top:22px'>Educational / research only "
-             "— NOT investment advice. Mechanical signals on a fixed 30-name "
-             "universe; they do not account for your objectives or risk. "
-             "Consult a SEBI-registered adviser before acting.</p>")
+    p.append(f"<p class='mut' style='margin-top:22px'>{DISCLAIMER}</p>")
     p.append(f"<p class='mut'>Generated {generated:%Y-%m-%d %H:%M} UTC · "
              "base brief, independent of the main pipeline</p>")
     p.append("</body></html>")
     return "\n".join(p)
 
 
+def build_subject(generated: datetime, failures: Mapping[str, str]) -> str:
+    """Email subject; names how many markets degraded so the inbox shows it."""
+    subject = f"Daily Market Brief — {generated:%d %b %Y}"
+    if failures:
+        subject += f" ({len(failures)} degraded)"
+    return subject
+
+
 # ── email ─────────────────────────────────────────────────────────────────────
-def _env(key, default=None):
+def _env(key: str, default: str | None = None,
+         env: Mapping[str, str] | None = None) -> str | None:
     """Env var, treating EMPTY as absent.
 
     GitHub Actions sets an env var for every `secrets.X` reference, so an
@@ -258,34 +344,68 @@ def _env(key, default=None):
     "Absent" and "empty" are different states and only one of them takes a
     default.
     """
-    v = os.environ.get(key)
+    v = (os.environ if env is None else env).get(key)
     return v.strip() if v and v.strip() else default
 
 
-def send(html, subject):
-    """SMTP from env only. Missing config is a clear skip, never a crash."""
-    host = _env("SMTP_HOST", "smtp.gmail.com")
+@dataclass(frozen=True)
+class SmtpConfig:
+    """Everything deliver() needs; `to` may be a comma-separated list."""
+    host: str
+    port: int
+    user: str
+    password: str
+    to: str
+
+
+def smtp_config(env: Mapping[str, str] | None = None) -> tuple[SmtpConfig | None, str]:
+    """(config, "") when SMTP_* is complete, else (None, reason-to-skip)."""
+    host = _env("SMTP_HOST", DEFAULT_SMTP_HOST, env)
     try:
-        port = int(_env("SMTP_PORT", "587"))
+        port = int(_env("SMTP_PORT", DEFAULT_SMTP_PORT, env))
     except ValueError:
-        print(f"  email: SMTP_PORT={os.environ.get('SMTP_PORT')!r} is not a number "
-              "— skipping send")
-        return False
-    user, pw = _env("SMTP_USER"), _env("SMTP_PASS")
-    to = _env("SMTP_TO") or user
+        shown = (os.environ if env is None else env).get("SMTP_PORT")
+        return None, f"SMTP_PORT={shown!r} is not a number"
+    user, pw = _env("SMTP_USER", env=env), _env("SMTP_PASS", env=env)
+    to = _env("SMTP_TO", env=env) or user
     if not (user and pw and to):
-        missing = [k for k in ("SMTP_USER", "SMTP_PASS", "SMTP_TO") if not _env(k)]
-        print(f"  email: not configured ({', '.join(missing)}) — skipping send")
-        return False
+        missing = [k for k in ("SMTP_USER", "SMTP_PASS", "SMTP_TO") if not _env(k, env=env)]
+        return None, f"not configured ({', '.join(missing)})"
+    return SmtpConfig(host, port, user, pw, to), ""
+
+
+def build_message(cfg: SmtpConfig, html: str, subject: str) -> MIMEMultipart:
+    """Multipart/alternative: a one-line plain part plus the HTML brief."""
     m = MIMEMultipart("alternative")
-    m["Subject"], m["From"], m["To"] = subject, user, to
+    m["Subject"], m["From"], m["To"] = subject, cfg.user, cfg.to
     m.attach(MIMEText("HTML brief attached inline.", "plain"))
     m.attach(MIMEText(html, "html"))
-    with smtplib.SMTP(host, port, timeout=45) as s:
+    return m
+
+
+def deliver(cfg: SmtpConfig, html: str, subject: str,
+            smtp_factory: Callable[..., Any] = smtplib.SMTP) -> None:
+    """STARTTLS + login + sendmail. Raises on any delivery error — the caller decides."""
+    m = build_message(cfg, html, subject)
+    with smtp_factory(cfg.host, cfg.port, timeout=SMTP_TIMEOUT_S) as s:
         s.starttls()
-        s.login(user, pw)
-        s.sendmail(user, [x.strip() for x in to.split(",")], m.as_string())
-    print(f"  email: sent to {to}")
+        s.login(cfg.user, cfg.password)
+        s.sendmail(cfg.user, [x.strip() for x in cfg.to.split(",")], m.as_string())
+
+
+def send(html: str, subject: str, env: Mapping[str, str] | None = None,
+         smtp_factory: Callable[..., Any] = smtplib.SMTP) -> bool:
+    """SMTP from env only. Missing config is a clear skip (False), never a crash.
+
+    There is no already-sent guard: every call that finds SMTP_* configured
+    sends. Two schedulers firing the same morning means two briefs, by design.
+    """
+    cfg, reason = smtp_config(env)
+    if cfg is None:
+        print(f"  email: {reason} — skipping send")
+        return False
+    deliver(cfg, html, subject, smtp_factory)
+    print(f"  email: sent to {cfg.to}")
     return True
 
 
@@ -332,8 +452,7 @@ def self_test() -> int:
 
     # An unconfigured send is a SKIP, not a failure — otherwise a CI run with no
     # secrets reports broken when it worked.
-    saved = {k: os.environ.pop(k, None) for k in
-             ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_TO")}
+    saved = {k: os.environ.pop(k, None) for k in SMTP_KEYS}
     os.environ["SMTP_PORT"] = ""          # reproduce the exact CI condition
     try:
         check("unconfigured send skips cleanly instead of raising",
@@ -349,29 +468,28 @@ def self_test() -> int:
     return 0 if ok else 1
 
 
-def main() -> int:
+# ── CLI ───────────────────────────────────────────────────────────────────────
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """CLI flags. Names are load-bearing: launchd and CI invoke them by name."""
     ap = argparse.ArgumentParser(description="Base daily market brief")
-    ap.add_argument("--email", action="store_true")
-    ap.add_argument("--out", default=str(HERE / "brief.html"))
-    ap.add_argument("--self-test", action="store_true")
-    a = ap.parse_args()
+    ap.add_argument("--email", action="store_true",
+                    help="also send the brief via SMTP_* env (skips if unset)")
+    ap.add_argument("--out", default=str(OUT_FILE),
+                    help="where to write the HTML (default: %(default)s)")
+    ap.add_argument("--self-test", action="store_true",
+                    help="verify the signal logic offline and exit")
+    return ap.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Exit 0 on a brief, 1 if no market returned data, 2 if only delivery failed."""
+    a = parse_args(argv)
 
     if a.self_test:
         return self_test()
 
     generated = datetime.now(timezone.utc)
-    results, failures = {}, {}
-    for market, tickers in UNIVERSE.items():
-        try:
-            r = fetch(tickers)
-            good = {k: v for k, v in r.items() if "error" not in v}
-            if not good:
-                failures[market] = "no usable data"
-            results[market] = r
-            print(f"  {market}: {len(good)}/{len(tickers)} priced")
-        except Exception as e:
-            failures[market] = f"{type(e).__name__}"
-            print(f"  {market}: FAILED {type(e).__name__}: {str(e)[:70]}")
+    results, failures = collect(UNIVERSE)
 
     if not results:
         # Nothing at all: exit non-zero so the scheduler surfaces it. Sending an
@@ -384,14 +502,11 @@ def main() -> int:
     print(f"  wrote {a.out} ({len(html):,} bytes)")
 
     if a.email:
-        subject = f"Daily Market Brief — {generated:%d %b %Y}"
-        if failures:
-            subject += f" ({len(failures)} degraded)"
         try:
             # send() returns False for "not configured" — a legitimate state, not
             # a failure. Only a genuine delivery error is worth a non-zero exit;
             # conflating the two made an unconfigured CI run look broken.
-            send(html, subject)
+            send(html, build_subject(generated, failures))
         except Exception as e:
             print(f"  email FAILED: {type(e).__name__}: {str(e)[:90]}")
             return 2          # brief was produced; only delivery failed

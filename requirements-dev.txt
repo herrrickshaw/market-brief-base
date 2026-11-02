@@ -1,0 +1,4 @@
+# Test and lint tooling only; the brief itself needs just requirements.txt.
+-r requirements.txt
+pytest==9.2.0
+ruff==0.17.3
