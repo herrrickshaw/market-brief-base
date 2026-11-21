@@ -2,4 +2,4 @@
 # interpreters had different packages; a floating range reintroduces that
 # between the laptop and CI.
 yfinance==0.2.66
-pandas==2.3.3
+pandas==3.1.1
