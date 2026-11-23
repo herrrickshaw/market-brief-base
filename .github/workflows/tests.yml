@@ -1,0 +1,32 @@
+name: tests
+# The repo only had the daily-brief workflow (an inline `--self-test`), so no pytest job and no coverage.
+# This runs the offline suite with the same pinned dependencies and Python as the brief itself.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+      - name: Run offline tests with coverage
+        run: python -m pytest tests -q -p no:cacheprovider --cov --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          fail_ci_if_error: false
