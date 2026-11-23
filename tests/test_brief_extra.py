@@ -392,3 +392,25 @@ def test_self_test_output_lists_passes_and_restores_the_environment(monkeypatch,
     import os
     assert os.environ["SMTP_USER"] == "keep@x.test" and os.environ["SMTP_PORT"] == "2525"
     assert "_T_SET" not in os.environ
+
+
+def test_main_returns_the_self_test_result(monkeypatch, tmp_path):
+    monkeypatch.setattr(brief, "self_test", lambda: 1)
+    monkeypatch.setattr(sys, "argv", ["brief.py", "--self-test"])
+    assert brief.main() == 1
+
+
+def test_self_test_fails_loudly_when_the_logic_is_broken(monkeypatch, capsys):
+    monkeypatch.setattr(brief, "sma", lambda vals, n: 0.0)                    # an "invented" average
+    assert brief.self_test() == 1
+    out = capsys.readouterr().out
+    assert "FAIL  sma returns None rather than inventing a short average" in out and "self-test: FAILED" in out
+    assert "PASS" in out                                                          # unrelated checks still report
+
+
+def test_self_test_reports_an_unexpected_send_exception_as_a_failure(monkeypatch, capsys):
+    def boom(html, subject):
+        raise RuntimeError("smtp exploded")
+    monkeypatch.setattr(brief, "send", boom)
+    assert brief.self_test() == 1
+    assert "FAIL  unconfigured send raised RuntimeError" in capsys.readouterr().out
